@@ -1,0 +1,3 @@
+[submodule "Lib65816"]
+	path = Lib65816
+	url = https://github.com/nick-less/Lib65816.git
