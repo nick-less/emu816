@@ -1,5 +1,8 @@
 #include "Log.hpp"
-#include "Ram.hpp"
+#include "ram.hpp"
+#include "rom.hpp"
+#include "basic.hpp"
+#include "video.hpp"
 
 #include <lib65816/include/Interrupt.hpp>
 #include <lib65816/include/SystemBus.hpp>
@@ -29,6 +32,8 @@ EmulationModeInterrupts emulationInterrupts {
 
 int main(int argc, char **argv) {
     Log::vrb(LOG_TAG).str("+++ Lib65816 Sample Programs +++").show();
+
+    Video video = Video (Address(0x00, 0xd000));
 
     Ram ram = Ram(0x2);
     ram.storeByte(Address(0x00, 0x0000), 0x18);
