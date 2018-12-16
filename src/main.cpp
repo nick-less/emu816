@@ -1,3 +1,5 @@
+
+
 #include "Log.hpp"
 #include "ram.hpp"
 #include "rom.hpp"
@@ -35,6 +37,9 @@ int main(int argc, char **argv) {
 
     Video video = Video (Address(0x00, 0xd000));
 
+    Rom basic = Rom(Address(0x00, 0xa000),  (uint8_t*)&basic_a000, 0x3fff);
+    Rom kernal = Rom(Address(0x00, 0xe000), (uint8_t*)&basic_e000 , 0x1fff);
+
     Ram ram = Ram(0x2);
     ram.storeByte(Address(0x00, 0x0000), 0x18);
     ram.storeByte(Address(0x00, 0x0001), 0xFB);
@@ -42,8 +47,13 @@ int main(int argc, char **argv) {
     ram.storeByte(Address(0x00, 0x0003), 0x65);
     ram.storeByte(Address(0x00, 0x0004), 0x12);
 
+    Log::vrb(LOG_TAG).str("Reset").hex(kernal.readByte(Address(0x00,0xFFFC))).hex(kernal.readByte(Address(0x00,0xFFFD))).show();
+
+
     SystemBus systemBus = SystemBus();
     systemBus.registerDevice(&ram);
+    systemBus.registerDevice(&basic);
+    systemBus.registerDevice(&kernal);
 
     Cpu65816 cpu(systemBus, &emulationInterrupts, &nativeInterrupts);
     Cpu65816Debugger debugger(cpu);
