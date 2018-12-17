@@ -6,7 +6,7 @@ Rom::Rom(Address adr, uint8_t* memPtr, int size) {
     startAdr = adr;
     rSize = size;
 
-            Log::vrb("ROM").str("at").hex(startAdr.getOffset()).sp().str("size :").hex(size).show();
+            Log::vrb("ROM").str("at ").hex(startAdr.getOffset()).sp().str("size :").hex(size).show();
 
 
 }
