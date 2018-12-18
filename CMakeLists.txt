@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-project (Lib65816_Sample)
+project (emu816)
 
 include(ExternalProject)
 
@@ -14,6 +14,9 @@ ExternalProject_Add(
         PREFIX "${PROJECT_SOURCE_DIR}/simple-logger"
         GIT_REPOSITORY https://github.com/FrancescoRigoni/Simple-Logger.git
         INSTALL_COMMAND "")
+
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
 
 # Retrieve lib65816 sources location
 ExternalProject_Get_Property(lib65816 source_dir)
@@ -52,4 +55,4 @@ file(GLOB sources src/*.cpp)
 add_executable(Lib65816_Sample ${sources})
 add_dependencies(Lib65816_Sample lib65816)
 add_dependencies(Lib65816_Sample simple-logger)
-target_link_libraries(Lib65816_Sample ${LIBS})
+target_link_libraries(Lib65816_Sample ${LIBS} ${SDL2_LIBRARIES})

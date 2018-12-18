@@ -32,20 +32,18 @@ EmulationModeInterrupts emulationInterrupts {
         .brkIrq = 0x0000
 };
 
+
 int main(int argc, char **argv) {
     Log::vrb(LOG_TAG).str("+++ Lib65816 Sample Programs +++").show();
 
     Video video = Video (Address(0x00, 0xd000));
+    video.update();
+
 
     Rom basic = Rom(Address(0x00, 0xa000),  (uint8_t*)&basic_a000, basic_a000_size);
     Rom kernal = Rom(Address(0x00, 0xe000), (uint8_t*)&basic_e000 , basic_e000_size);
 
     Ram ram = Ram(0x2);
-    ram.storeByte(Address(0x00, 0x0000), 0x18);
-    ram.storeByte(Address(0x00, 0x0001), 0xFB);
-    ram.storeByte(Address(0x00, 0x0002), 0xA9);
-    ram.storeByte(Address(0x00, 0x0003), 0x65);
-    ram.storeByte(Address(0x00, 0x0004), 0x12);
 
     // ret used return from interferred calls
     ram.storeByte(Address(0x00, 0x8000), 0x60);
@@ -59,7 +57,7 @@ for (int i=0;i<10;i++) {
 
 
     SystemBus systemBus = SystemBus();
-    systemBus.registerDevice(&video);
+//    systemBus.registerDevice(&video);
     systemBus.registerDevice(&basic);
     systemBus.registerDevice(&kernal);
     systemBus.registerDevice(&ram);
@@ -117,6 +115,7 @@ for (int i=0;i<10;i++) {
                  s[0] = cpu.getA() & 0xff;
                  s[1] = 0;
                 std::cout << s;
+                video.chrout(cpu.getA() & 0xff);
                 cpu.getCpuStatus()->clearCarryFlag();
                 cpu.setProgramAddress(Address(0x0,0x8000));
                 break;
