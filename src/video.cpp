@@ -72,8 +72,17 @@ void Video::update() {
 void Video::drawChar(int x, int y, unsigned char c, Uint32 color,
                      Uint32 bgcolor) {
 
+
+unsigned char chOut = c;
+  if ((c >63) && (c<96)) {
+      chOut = c-64;
+  }
+  if (!upperCase) {
+      chOut += 64;
+  }
+
   for (int i = 0; i < charHeight; i++) {
-    unsigned char v = charset[(c+64) * charWidth + i];
+    unsigned char v = charset[(chOut) * charWidth + i];
     // Log::vrb("Video").str("draw ").hex(renderCh).str(" ofs ").hex(ofs).str("
     // value ").hex(v).show();
 
@@ -102,6 +111,12 @@ void Video::chrout(unsigned char a) {
     Log::vrb("Video").str("clear ").show();
     cx=0;
     cy=0;
+    break;
+  case 14:
+    toggleCase();
+    break;
+  case 10: // line feed
+    cy++;
     break;
   case 13: // return
     cy++;

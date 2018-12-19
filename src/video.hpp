@@ -13,6 +13,7 @@ private:
     int charWidth = 8;
     int renderHeight = 2;
     int cx, cy;
+    bool upperCase = true;
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
@@ -25,6 +26,7 @@ public:
     Video(Address adr);
     ~Video();
 
+    void toggleCase() {upperCase = !upperCase;}
     void update();
     void drawChar(int x, int y, unsigned char c, Uint32 color, Uint32 bgcolor);
 
