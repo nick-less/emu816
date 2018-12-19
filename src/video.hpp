@@ -31,6 +31,7 @@ public:
     void drawChar(int x, int y, unsigned char c, Uint32 color, Uint32 bgcolor);
 
     void chrout(unsigned char a);
+    unsigned char chrin(void);
 
     void storeByte(const Address &, uint8_t);
     uint8_t readByte(const Address &);

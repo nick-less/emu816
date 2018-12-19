@@ -7,6 +7,7 @@
 
 Ram::Ram(uint8_t banks) {
     mRam = new uint8_t[banks * BANK_SIZE_BYTES];
+    memset(mRam, 0, banks * BANK_SIZE_BYTES);
 }
 
 Ram::~Ram() {

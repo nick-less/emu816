@@ -6,6 +6,8 @@
 #include "basic.hpp"
 #include "video.hpp"
 
+#include "gfx.h"
+
 #include <lib65816/include/Interrupt.hpp>
 #include <lib65816/include/SystemBus.hpp>
 #include <lib65816/include/Cpu65816.hpp>
@@ -80,37 +82,68 @@ for (int i=0;i<10;i++) {
         breakPointHit = true;
     });
 
+//    char buffer[] = "10 PRINT \"HELLO\"\rLIST\r";
+    char buffer[] = "RUN\r";
+    int ix=0;
+    int loaded = false;
+
     while (!breakPointHit) {
         switch (cpu.getProgramAddress().getOffset()) {
                 case 0xff90:
                 cpu.setProgramAddress(Address(0x0,0x8000));
                 break;
                 case 0xff99:  // MEMTOP
-                cpu.setXL( 0x1C00 & 0xFF);
-                cpu.setYL(  0x1C00 >> 8);
+                cpu.setXL( 0x7fff & 0xFF);
+                cpu.setYL(  0x7fff >> 8);
 //                debugger.dumpCpu();
                 cpu.setProgramAddress(Address(0x0,0x8000));
                 break;
                 case 0xff9c:  // MEMBOT
-                cpu.setXL( 0x0313 & 0xFF);
-                cpu.setYL(  0x0313 >> 8);
+                cpu.setXL( 0x0401 & 0xFF);
+                cpu.setYL(  0x0401 >> 8);
 //                debugger.dumpCpu();
                 cpu.setProgramAddress(Address(0x0,0x8000));
                 break;
                 case 0xffcc:  // CLRCHN
                 char ch;
+
                  Log::vrb(LOG_TAG).str("CLRCHN").hex(cpu.getA()).show();
                 cpu.setProgramAddress(Address(0x0,0x8000));
                 break;
                 case 0xffcf:  // CHRIN
-                 Log::vrb(LOG_TAG).str("CHRIN").hex(cpu.getA()).show();
-                char ci;
-                std::cin >> ci;
-                cpu.setA(ci);
+
+                if (!loaded) {
+        loaded = true;
+                            for (int i=0;i<gfx_prg_len-2;i++) {
+      ram.storeByte(Address(0x00, 0x401+i), gfx_prg[i+2]);
+    }
+
+}
+                 Log::vrb(LOG_TAG).str("*******CHRIN").hex(cpu.getA()).show();
+                unsigned char ci;
+                ci = video.chrin();
+                cpu.setA(0);
+                if (ix > sizeof(buffer)) {
+                      cpu.setX(0);
+                      SDL_Delay(20009);
+                } else {
+                cpu.setA(buffer[ix++]);
+                  
+                }
+                cpu.getCpuStatus()->clearCarryFlag();
+
                 cpu.setProgramAddress(Address(0x0,0x8000));
+                    printf("CHRIN ");
+
+                    for (int i=0;i<40;i++) {
+            printf("%02x ", ram.readByte(Address(0x00, 0x400+i)));
+    }
+    printf("\n");
                 break;
                 case 0xffd2:  // CHROUT
                 Log::vrb(LOG_TAG).str("CHROUT").hex(cpu.getA()).show();
+
+ 
                  char s[2] ;
                  s[0] = cpu.getA() & 0xff;
                  s[1] = 0;

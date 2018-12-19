@@ -58,7 +58,7 @@ Video::~Video() {
 void Video::update() {
   SDL_Event event;
   for (int i = 0; i < 2000; i++) {
-// color[i] >> 4, color[i] & 0x0f
+    // color[i] >> 4, color[i] & 0x0f
     drawChar(i % 80, i / 80, vbuffer[i], 0xFFFFFFFF, 0xFF);
   }
   SDL_UpdateTexture(texture, NULL, pixels, SCREEN_WIDTH * sizeof(Uint32));
@@ -72,17 +72,16 @@ void Video::update() {
 void Video::drawChar(int x, int y, unsigned char c, Uint32 color,
                      Uint32 bgcolor) {
 
-
-unsigned char chOut = c;
-  if ((c >63) && (c<96)) {
-      chOut = c-64;
+  unsigned char chOut = c;
+  if ((c > 63) && (c < 96)) {
+    chOut = c - 64;
   }
   if (!upperCase) {
-      chOut += 64;
+    chOut += 64;
   }
 
   for (int i = 0; i < charHeight; i++) {
-    unsigned char v = charset[(chOut) * charWidth + i];
+    unsigned char v = charset[(chOut)*charWidth + i];
     // Log::vrb("Video").str("draw ").hex(renderCh).str(" ofs ").hex(ofs).str("
     // value ").hex(v).show();
 
@@ -103,14 +102,24 @@ unsigned char chOut = c;
     }
   }
 }
+unsigned char Video::chrin(void) { 
+   SDL_Event event;
+  SDL_PollEvent(&event);
+   if (event.type== SDL_KEYDOWN) {
+       printf("key %d %ld\n", event.key.keysym.sym, sizeof(event.key.keysym.sym));
+       chrout( event.key.keysym.sym-32);
+       return event.key.keysym.sym-32;
+   } 
+    return 0;
+     }
 
 void Video::chrout(unsigned char a) {
   switch (a) {
   case 147: // clear
     memset(&vbuffer, 32, sizeof(vbuffer));
     Log::vrb("Video").str("clear ").show();
-    cx=0;
-    cy=0;
+    cx = 0;
+    cy = 0;
     break;
   case 14:
     toggleCase();
@@ -120,7 +129,7 @@ void Video::chrout(unsigned char a) {
     break;
   case 13: // return
     cy++;
-    cx=0;
+    cx = 0;
     break;
   default:
     vbuffer[cy * 80 + cx] = a;
@@ -130,9 +139,14 @@ void Video::chrout(unsigned char a) {
     cy++;
     cx = 0;
   }
-  if (cy > 25) {
-    cy = 25;
-    // TODO scroll
+  if (cy > 24) {
+    cy = 24;
+    for (int i=0;i<24;i++) {
+        memcpy(&vbuffer[i*80], &vbuffer[(i+1)*80],80);
+    }
+    memset(&vbuffer[24*80], 32, 80);
+    update();
+    SDL_Delay(2000);
   }
   update();
 }
