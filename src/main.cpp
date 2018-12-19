@@ -82,10 +82,8 @@ for (int i=0;i<10;i++) {
         breakPointHit = true;
     });
 
-//    char buffer[] = "10 PRINT \"HELLO\"\rLIST\r";
-    char buffer[] = "RUN\r";
+    char buffer[] = "10 PRINT \"HELLO WORLD \";\r20 GOTO 10\rRUN\r";
     int ix=0;
-    int loaded = false;
 
     while (!breakPointHit) {
         switch (cpu.getProgramAddress().getOffset()) {
@@ -112,13 +110,6 @@ for (int i=0;i<10;i++) {
                 break;
                 case 0xffcf:  // CHRIN
 
-                if (!loaded) {
-        loaded = true;
-                            for (int i=0;i<gfx_prg_len-2;i++) {
-      ram.storeByte(Address(0x00, 0x401+i), gfx_prg[i+2]);
-    }
-
-}
                  Log::vrb(LOG_TAG).str("*******CHRIN").hex(cpu.getA()).show();
                 unsigned char ci;
                 ci = video.chrin();
@@ -141,13 +132,10 @@ for (int i=0;i<10;i++) {
     printf("\n");
                 break;
                 case 0xffd2:  // CHROUT
-                Log::vrb(LOG_TAG).str("CHROUT").hex(cpu.getA()).show();
-
- 
+//                Log::vrb(LOG_TAG).str("CHROUT").hex(cpu.getA()).show();
                  char s[2] ;
                  s[0] = cpu.getA() & 0xff;
                  s[1] = 0;
-                std::cout << s;
                 video.chrout(cpu.getA() & 0xff);
                 cpu.getCpuStatus()->clearCarryFlag();
                 cpu.setProgramAddress(Address(0x0,0x8000));

@@ -145,8 +145,6 @@ void Video::chrout(unsigned char a) {
         memcpy(&vbuffer[i*80], &vbuffer[(i+1)*80],80);
     }
     memset(&vbuffer[24*80], 32, 80);
-    update();
-    SDL_Delay(2000);
   }
   update();
 }
