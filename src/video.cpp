@@ -102,16 +102,40 @@ void Video::drawChar(int x, int y, unsigned char c, Uint32 color,
     }
   }
 }
-unsigned char Video::chrin(void) { 
-   SDL_Event event;
+
+void Video::poll(void) {
+  SDL_Event event;
   SDL_PollEvent(&event);
-   if (event.type== SDL_KEYDOWN) {
-       printf("key %d %ld\n", event.key.keysym.sym, sizeof(event.key.keysym.sym));
-       chrout( event.key.keysym.sym-32);
-       return event.key.keysym.sym-32;
-   } 
-    return 0;
-     }
+   if (event.type == SDL_WINDOWEVENT) {
+        switch (event.window.event) {
+        case SDL_WINDOWEVENT_CLOSE:
+            SDL_Log("Window %d closed", event.window.windowID);
+            isClosed = true;
+            break;
+        }
+    }
+}
+
+unsigned char Video::chrin(void) {
+  SDL_Event event;
+  SDL_PollEvent(&event);
+  if (event.type == SDL_KEYDOWN) {
+    printf("key %d %ld\n", event.key.keysym.sym, sizeof(event.key.keysym.sym));
+    chrout(event.key.keysym.sym - 32);
+    return event.key.keysym.sym - 32;
+  }
+
+    if (event.type == SDL_WINDOWEVENT) {
+        switch (event.window.event) {
+        case SDL_WINDOWEVENT_CLOSE:
+            SDL_Log("Window %d closed", event.window.windowID);
+            isClosed = true;
+            break;
+        }
+    }
+
+  return 0;
+}
 
 void Video::chrout(unsigned char a) {
   switch (a) {
@@ -141,10 +165,10 @@ void Video::chrout(unsigned char a) {
   }
   if (cy > 24) {
     cy = 24;
-    for (int i=0;i<24;i++) {
-        memcpy(&vbuffer[i*80], &vbuffer[(i+1)*80],80);
+    for (int i = 0; i < 24; i++) {
+      memcpy(&vbuffer[i * 80], &vbuffer[(i + 1) * 80], 80);
     }
-    memset(&vbuffer[24*80], 32, 80);
+    memset(&vbuffer[24 * 80], 32, 80);
   }
   update();
 }

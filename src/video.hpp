@@ -14,6 +14,7 @@ private:
     int renderHeight = 2;
     int cx, cy;
     bool upperCase = true;
+    bool isClosed = false;
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
@@ -25,6 +26,10 @@ public:
 
     Video(Address adr);
     ~Video();
+
+    void poll(void);
+
+    bool closed(void) { return isClosed;};
 
     void toggleCase() {upperCase = !upperCase;}
     void update();
