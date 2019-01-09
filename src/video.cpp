@@ -7,17 +7,19 @@
 
 #include "charset.h"
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 400
-#define ERROR_SDL_INIT 100
 
-Video::Video(Address adr) {
-  startAdr = adr;
+Video::Video() {
   cx = 0;
   cy = 0;
-  for (unsigned char i = 32; i < 127; i++) {
+  for (unsigned char i = 32; i < 255; i++) {
     vbuffer[i - 32] = i;
+    cbuffer[i] = 1;
   }
+    for (int i = 255; i < 512; i++) {
+    vbuffer[i ] = i%2 == 0 ?0xa0:0x20;
+    cbuffer[i] = 1;
+  }
+
   if (SDL_Init(SDL_INIT_VIDEO) == 0) {
     window = SDL_CreateWindow("Console", SDL_WINDOWPOS_UNDEFINED,
                               SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
@@ -57,9 +59,10 @@ Video::~Video() {
 
 void Video::update() {
   SDL_Event event;
-  for (int i = 0; i < 2000; i++) {
+  for (int i = 0; i < SCREEN_MEM_SIZE; i++) {
     // color[i] >> 4, color[i] & 0x0f
-    drawChar(i % 80, i / 80, vbuffer[i], 0xFFFFFFFF, 0xFF);
+    int color = colortable [cbuffer[i] & 0x0f];
+    drawChar(i % WIDTH, i / WIDTH, vbuffer[i], color, colortable[6]);
   }
   SDL_UpdateTexture(texture, NULL, pixels, SCREEN_WIDTH * sizeof(Uint32));
   SDL_PollEvent(&event);
@@ -79,7 +82,14 @@ void Video::drawChar(int x, int y, unsigned char c, Uint32 color,
   if (!upperCase) {
     chOut += 64;
   }
-
+   Uint32 tmp;
+  if (chOut>128) { // inverse
+     chOut = chOut - 64;
+     tmp = color,
+     color= bgcolor;
+     bgcolor = tmp;
+  }
+// Log::vrb("Video").str("draw ").hex(c).sp().hex(chOut).show();
   for (int i = 0; i < charHeight; i++) {
     unsigned char v = charset[(chOut)*charWidth + i];
     // Log::vrb("Video").str("draw ").hex(renderCh).str(" ofs ").hex(ofs).str("
@@ -156,48 +166,80 @@ void Video::chrout(unsigned char a) {
     cx = 0;
     break;
   default:
-    vbuffer[cy * 80 + cx] = a;
+    vbuffer[cy * WIDTH + cx] = a;
     cx++;
   }
-  if (cx > 80) {
+  if (cx > WIDTH) {
     cy++;
     cx = 0;
   }
-  if (cy > 24) {
-    cy = 24;
-    for (int i = 0; i < 24; i++) {
-      memcpy(&vbuffer[i * 80], &vbuffer[(i + 1) * 80], 80);
+  if (cy > HEIGHT-1) {
+    cy = HEIGHT-1;
+    for (int i = 0; i < HEIGHT-1; i++) {
+      memcpy(&vbuffer[i * WIDTH], &vbuffer[(i + 1) * WIDTH], WIDTH);
     }
-    memset(&vbuffer[24 * 80], 32, 80);
+    memset(&vbuffer[(HEIGHT-1) * WIDTH], 32, WIDTH);
   }
   update();
 }
 
 void Video::storeByte(const Address &address, uint8_t value) {
-  // do nothing
+  Log::vrb("VIC")
+      .str("memwrite ")
+      .hex(address.getBank())
+      .hex(address.getOffset())
+      .sp()
+      .hex(value)
+      .show();
+      if (address.getOffset() > startAdr.getOffset() + SCREEN_MEM_SIZE ) {
+      cbuffer[address.getOffset()-colorAdr.getOffset()] = value;
+
+      } else {
+    // do nothing
+      vbuffer[address.getOffset()-startAdr.getOffset()] = value;
+
+      }
+
 }
 
 uint8_t Video::readByte(const Address &address) {
-  Log::vrb("Video")
-      .str("read")
+  Log::vrb("VIC")
+      .str("memread ")
       .hex(address.getBank())
       .hex(address.getOffset())
       .show();
+      if (address.getOffset() > startAdr.getOffset() + SCREEN_MEM_SIZE ) {
+  return cbuffer[address.getOffset()-colorAdr.getOffset()];
+      } else {
 
-  return 0;
+  return vbuffer[address.getOffset()-startAdr.getOffset()];
+      }
+
 }
 
 bool Video::decodeAddress(const Address &in, Address &out) {
   if ((in.getBank() == startAdr.getBank()) &&
-      (in.getOffset() > startAdr.getOffset()) &&
-      (in.getOffset() < startAdr.getOffset() + 2000)) {
+      (in.getOffset() >= startAdr.getOffset()) &&
+      (in.getOffset() < startAdr.getOffset() + SCREEN_MEM_SIZE)) {
     Log::vrb("Video")
-        .str("decodeAddress")
+        .str("decodeAddress vid")
         .hex(in.getBank())
         .hex(in.getOffset())
         .show();
     out = in;
 
+    return true;
+  }
+
+  if ((in.getBank() == colorAdr.getBank()) &&
+      (in.getOffset() >= colorAdr.getOffset()) &&
+      (in.getOffset() < colorAdr.getOffset() + SCREEN_MEM_SIZE)) {
+    Log::vrb("Video")
+        .str("decodeAddress color")
+        .hex(in.getBank())
+        .hex(in.getOffset())
+        .show();
+    out = in;
     return true;
   }
 

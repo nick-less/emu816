@@ -21,7 +21,7 @@ void Ram::storeByte(const Address &address, uint8_t value) {
 }
 
 uint8_t Ram::readByte(const Address &address) {
-//            Log::vrb("RAM").str("read").hex(address.getBank()).hex(address.getOffset(),4).sp().hex(mRam[address.getOffset()]).show();
+ //           Log::vrb("RAM").str("read").hex(address.getBank()).hex(address.getOffset(),4).sp().hex(mRam[address.getOffset()]).show();
 
     return mRam[address.getOffset()];
 }
