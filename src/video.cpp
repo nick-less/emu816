@@ -119,14 +119,23 @@ void Video::poll(void) {
   if (SDL_PollEvent(&event)) {
   if (event.type == SDL_KEYUP) {
     unsigned char c = ram->readByte(Address(0x00, 0xc6));
-    printf("key %d %ld : %d\n", event.key.keysym.sym, sizeof(event.key.keysym.sym), c);
+    printf("key %x %ld  %x: %d\n", event.key.keysym.sym, sizeof(event.key.keysym.sym), event.key.keysym.mod, c);
         if (c <10) {
-          unsigned char k= event.key.keysym.sym;
-          if (k >=96 ) {
-            k = k -32;
+          unsigned int k= event.key.keysym.sym;
+          if (k < 255) {
+              if ((  event.key.keysym.mod & KMOD_RSHIFT )  || ( event.key.keysym.mod & KMOD_LSHIFT )) {
+                k = k - 16;
+              }  else {
+              if (k >=96 ) {
+                k = k -32;
+              }
+                
+              }
+
+          ram->storeByte(Address(0,0x277+c), k);
+          ram->storeByte(Address(0,0xc6), c+1);
+
           }
-        ram->storeByte(Address(0,0x277+c), k);
-        ram->storeByte(Address(0,0xc6), c+1);
          Log::vrb("Video")
         .str("key !").show();
 
