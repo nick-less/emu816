@@ -8,7 +8,8 @@
 #include "charset.h"
 
 
-Video::Video() {
+Video::Video(Ram *ram) {
+  this->ram = ram;
   cx = 0;
   cy = 0;
   for (unsigned char i = 32; i < 255; i++) {
@@ -115,7 +116,23 @@ void Video::drawChar(int x, int y, unsigned char c, Uint32 color,
 
 void Video::poll(void) {
   SDL_Event event;
-  SDL_PollEvent(&event);
+  if (SDL_PollEvent(&event)) {
+  if (event.type == SDL_KEYUP) {
+    unsigned char c = ram->readByte(Address(0x00, 0xc6));
+    printf("key %d %ld : %d\n", event.key.keysym.sym, sizeof(event.key.keysym.sym), c);
+        if (c <10) {
+          unsigned char k= event.key.keysym.sym;
+          if (k >=96 ) {
+            k = k -32;
+          }
+        ram->storeByte(Address(0,0x277+c), k);
+        ram->storeByte(Address(0,0xc6), c+1);
+         Log::vrb("Video")
+        .str("key !").show();
+
+        }
+  }
+
    if (event.type == SDL_WINDOWEVENT) {
         switch (event.window.event) {
         case SDL_WINDOWEVENT_CLOSE:
@@ -123,6 +140,7 @@ void Video::poll(void) {
             isClosed = true;
             break;
         }
+    }
     }
 }
 
@@ -184,6 +202,7 @@ void Video::chrout(unsigned char a) {
 }
 
 void Video::storeByte(const Address &address, uint8_t value) {
+  /*
   Log::vrb("VIC")
       .str("memwrite ")
       .hex(address.getBank())
@@ -191,6 +210,7 @@ void Video::storeByte(const Address &address, uint8_t value) {
       .sp()
       .hex(value)
       .show();
+      */
       if (address.getOffset() > startAdr.getOffset() + SCREEN_MEM_SIZE ) {
       cbuffer[address.getOffset()-colorAdr.getOffset()] = value;
 
@@ -203,11 +223,14 @@ void Video::storeByte(const Address &address, uint8_t value) {
 }
 
 uint8_t Video::readByte(const Address &address) {
+  /*
+  
   Log::vrb("VIC")
       .str("memread ")
       .hex(address.getBank())
       .hex(address.getOffset())
       .show();
+      */
       if (address.getOffset() > startAdr.getOffset() + SCREEN_MEM_SIZE ) {
   return cbuffer[address.getOffset()-colorAdr.getOffset()];
       } else {
@@ -221,11 +244,13 @@ bool Video::decodeAddress(const Address &in, Address &out) {
   if ((in.getBank() == startAdr.getBank()) &&
       (in.getOffset() >= startAdr.getOffset()) &&
       (in.getOffset() < startAdr.getOffset() + SCREEN_MEM_SIZE)) {
+        /*
     Log::vrb("Video")
         .str("decodeAddress vid")
         .hex(in.getBank())
         .hex(in.getOffset())
         .show();
+        */
     out = in;
 
     return true;
@@ -234,11 +259,13 @@ bool Video::decodeAddress(const Address &in, Address &out) {
   if ((in.getBank() == colorAdr.getBank()) &&
       (in.getOffset() >= colorAdr.getOffset()) &&
       (in.getOffset() < colorAdr.getOffset() + SCREEN_MEM_SIZE)) {
+        /*
     Log::vrb("Video")
         .str("decodeAddress color")
         .hex(in.getBank())
         .hex(in.getOffset())
         .show();
+        */
     out = in;
     return true;
   }

@@ -1,17 +1,16 @@
 
 #include "Log.hpp"
-#include "basic.hpp"
 #include "ram.hpp"
-#include "rom.hpp"
 #include "video.hpp"
 #include "vic.hpp"
+#include "spi.hpp"
+#include "../native/loader/loader.h"
 
 #include <fstream>
 #include <iostream>
 #include <iterator>
 
 #include "gfx.h"
-#include "kernel.h"
 
 #include <lib65816/include/Cpu65816.hpp>
 #include <lib65816/include/Cpu65816Debugger.hpp>
@@ -41,58 +40,38 @@ EmulationModeInterrupts emulationInterrupts{.coProcessorEnable = 0x0000,
                                             .unused = 0x0000,
                                             .abort = 0x0000,
                                             .nonMaskableInterrupt = 0xFFFA,
-                                            .reset = 0xFCE2,
+                                            .reset = 0xff80,
                                             .brkIrq = 0xFFFE};
 
 int main(int argc, char **argv) {
-  Log::vrb(LOG_TAG).str("+++ Lib65816 Sample Programs +++").show();
+  Log::vrb(LOG_TAG).str("+++ 65816 sbc emulator +++").show();
 
-  Video video = Video();
-  video.update();
-
-  Rom basic =
-      Rom(Address(0x00, 0xa000), (uint8_t *)&basic_a000, basic_a000_size);
-  //  Rom kernal =
-  //     Rom(Address(0x00, 0xe000), (uint8_t *)&basic_e000, basic_e000_size);
-
-  Rom kernal =  Rom(Address(0x00, 0xe000), (uint8_t *)&kernal_64_bin, kernal_64_bin_len);
-
+  
   Vic vic = Vic (Address(0x00, 0xD000));
+  SPI spi = SPI (Address(0x00, 0xDE00));
+
 
   Ram ram = Ram(0x2);
-  // ret used return from interferred calls
-  ram.storeByte(Address(0x00, 0x8000), 0x60);
-
-  Log::vrb(LOG_TAG)
-      .str("basic")
-      .hex(basic.readByte(Address(0x00, 0xa000)))
-      .hex(basic.readByte(Address(0x00, 0xa001)))
-      .show();
-
-  for (int i = 0; i < 10; i++) {
-    Log::vrb(LOG_TAG)
-        .str("basic")
-        .hex(kernal.readByte(Address(0x00, 0xE419 + i)))
-        .show();
+  // Loader is in RAM just like the real hardware handles this
+  for (int i=0;i<128;i++) {
+          ram.storeByte(Address(0,0xff80+i), loader[i]);
   }
+
+  Video video = Video(&ram);
+  video.update();
+
 
   SystemBus systemBus = SystemBus();
   systemBus.registerDevice(&video);
   systemBus.registerDevice(&vic);
-  systemBus.registerDevice(&basic);
-  systemBus.registerDevice(&kernal);
+  systemBus.registerDevice(&spi);
   systemBus.registerDevice(&ram);
 
   Cpu65816 cpu(systemBus, &emulationInterrupts, &nativeInterrupts);
   Cpu65816Debugger debugger(cpu);
-  debugger.setBreakPoint(Address(0x00, 0x0003));
+  debugger.setBreakPoint(Address(0x00, 0x0000));
   debugger.doBeforeStep([]() {});
   debugger.doAfterStep([]() {});
-  // make basic happy
-  cpu.getStack()->push8Bit(0);
-  cpu.getStack()->push8Bit(0);
-  cpu.getStack()->push8Bit(0);
-  cpu.getStack()->push8Bit(0);
 
   vic.setCpu( &cpu);
 
@@ -101,110 +80,18 @@ int main(int argc, char **argv) {
   bool breakPointHit = false;
   debugger.onBreakPoint([&breakPointHit]() { breakPointHit = true; });
 
-  //      char buffer[] = "10 PRINT \"HELLO WORLD \";\r20 GOTO 10\rSAVE
-  //      \"HELLO\"\r";
-  char buffer[] = "LOAD \"*\"\rLIST\r";
-  //  char buffer[]="SAVE \"HELLO\"\r";
   int ix = 0;
   int cnt = 0;
   
   while ((!breakPointHit) && (!video.closed())) {
+ 
+
     if (cnt++ % 5000 == 0) {
       video.poll();
       video.update();
     }
-            /*
-    switch (cpu.getProgramAddress().getOffset()) {
-    case 0xffd8:
-      for (int i = 0; i < 100; i++) {
-        Log::vrb("mem ")
-            .hex(BASIC_START + i)
-            .sp()
-            .hex(ram.readByte(Address(0x00, BASIC_START + i)))
-            .show();
-      }
-      break;
-    case 0xff90:
-    case 0xffbd: // setnam - set filename parameters
-    case 0xffba: // setfls // set file parameters
-    case 0xFFF0: // save cursor
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xffb7: // status
-      cpu.setA(0);
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xffd5: // load
-      debugger.dumpCpu();
-      load(&ram, "pet clock");
-      // SDL_Delay(20000);
-      cpu.getCpuStatus()->clearCarryFlag();
-
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xff99: // MEMTOP
-      cpu.setXL(BASIC_END & 0xFF);
-      cpu.setYL(BASIC_END >> 8);
-      //                debugger.dumpCpu();
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xff9c: // MEMBOT
-      cpu.setXL(BASIC_START & 0xFF);
-      cpu.setYL(BASIC_START >> 8);
-      //                debugger.dumpCpu();
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xffcc: // CLRCHN
-      char ch;
-
-      Log::vrb(LOG_TAG).str("CLRCHN").hex(cpu.getA()).show();
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xffcf: // CHRIN
-
-      Log::vrb(LOG_TAG).str("*******CHRIN").hex(cpu.getA()).show();
-      unsigned char ci;
-      ci = video.chrin();
-      cpu.setA(0);
-      if (ix > sizeof(buffer)) {
-        cpu.setX(0);
-      } else {
-        cpu.setA(buffer[ix++]);
-      }
-      cpu.getCpuStatus()->clearCarryFlag();
-
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      printf("CHRIN ");
-
-      for (int i = 0; i < 40; i++) {
-        printf("%02x ", ram.readByte(Address(0x00, 0x400 + i)));
-      }
-      printf("\n");
-      break;
-    case 0xffd2: // CHROUT
-      //                Log::vrb(LOG_TAG).str("CHROUT").hex(cpu.getA()).show();
-      char s[2];
-      s[0] = cpu.getA() & 0xff;
-      s[1] = 0;
-      video.chrout(cpu.getA() & 0xff);
-      cpu.getCpuStatus()->clearCarryFlag();
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xffe1: // STOP
-      cpu.getCpuStatus()->clearZeroFlag();
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    case 0xffe7: // STOP
-                 //                cpu.getCpuStatus()->clearZeroFlag();
-      cpu.setProgramAddress(Address(0x0, 0x8000));
-      break;
-    }
-    */
-  if (ix) {
-   //SDL_Delay(100);
-
-  }
-    debugger.step();
+ 
+      debugger.step();
   }
 
   debugger.dumpCpu();
@@ -213,7 +100,7 @@ int main(int argc, char **argv) {
    for (int i = 0; i < 32; i++) {
     Log::vrb(LOG_TAG)
         .str("ram")
-        .hex(ram.readByte(Address(0x00, 0x300 + i)))
+        .hex(ram.readByte(Address(0x00, 0xa000 + i)))
         .show();
   }
 // SDL_Delay(20000);

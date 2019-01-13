@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <lib65816/include/SystemBusDevice.hpp>
+#include "ram.hpp"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 400
@@ -33,6 +34,7 @@ private:
     SDL_Surface *screenSurface = NULL;
     SDL_Texture * texture = NULL;
     Uint32 * pixels = NULL;
+    Ram *ram;
 
     Uint32 colortable[16] = {
         0x00000000,
@@ -56,7 +58,7 @@ private:
 
 public:
 
-    Video();
+    Video(Ram *ram);
     ~Video();
 
     void poll(void);

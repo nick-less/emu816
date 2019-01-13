@@ -49,7 +49,7 @@ else ()
 endif ()
 
 # All warnings on
-set (CMAKE_CXX_FLAGS "-Wall ${CMAKE_CXX_FLAGS}")
+set (CMAKE_CXX_FLAGS "-Os -Wall ${CMAKE_CXX_FLAGS}")
 file(GLOB sources src/*.cpp)
 
 add_executable(Lib65816_Sample ${sources})
