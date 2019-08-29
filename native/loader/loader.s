@@ -1,5 +1,5 @@
-; the loader is a small program which will be copied to memory by the cpld
-; it will enable native mode, load the first blocks from flash and jump there to start
+; the loader is a small program which will be present in the cpld
+; it will enable native mode, load the first blocks from spi flash at sel0 and jump there to start
 .setcpu         "65816"
 .smart          on
 .autoimport     on
@@ -29,10 +29,10 @@ _reset:
         sta SPIDATA
         lda #$00
         sta SPIDATA
-        lda #$01
+        lda #$00
         sta SPIDATA
         lda #$00
-        sta SPIDATA ; start reading at addr 0x100 (byte )
+        sta SPIDATA ; start reading at addr 0x00 (byte )
 
         lda SPIDATA ; load target msb
         tax         ; target msb is now in x
