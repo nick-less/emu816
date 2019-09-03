@@ -6,7 +6,7 @@
 .case           on
 .debuginfo      off
 
-.define SPI     $DE00
+.define SPI     $FF80
 .define SPIDATA SPI
 .define SPISTAT SPI+1
 .define SPIDIV  SPI+2
@@ -19,53 +19,47 @@
 
 
 _reset:
+        ; slave sel0
+        lda #SLAVE_SEL
+        sta SPISEL
+; send cmd read
+        ldx #3;
+l1:     lda _read,x
+        sta SPIDATA
+        dex
+        bpl l1
+;load first 5 bytes (size+start address)
+        ldx #4
+l2:     lda SPIDATA
+        sta $7E,x
+        dex 
+        bpl l2
+
+; not need, y is zero after reset
+;        ldy #$0
+
         ; to native mode
         clc    ;clear carry to zero.
         xce    ;exchange (swap) carry with the emulation bit.
-        rep #$10
-        sep #$20
-        jsr _sel
-        lda #CMD_READ
-        sta SPIDATA
-        lda #$00
-        sta SPIDATA
-        lda #$00
-        sta SPIDATA
-        lda #$00
-        sta SPIDATA ; start reading at addr 0x00 (byte )
+        sep #$20 ; akku 8 bit
 
-        lda SPIDATA ; load target msb
-        tax         ; target msb is now in x
-        lda SPIDATA
-        sta $81
-        lda SPIDATA
-        sta $80
-
-        lda SPIDATA ; load size of block
-        sta $83
-        lda SPIDATA ; load size of block
-        sta $82
-        ldy #$0
-        ldx $82 
+        ldx $7E 
 _copy:
         lda SPIDATA
         sta ($80),y
         iny
         dex
         bne _copy
-        jsr _unsel
+        ; slave unsel
+        lda #$0
+        sta SPISEL
         ; back to emulation mode
         sec    ;set carry to one.
         xce    ;exchange (swap) carry with the emulation bit.
         jmp ($80)
-_sel:
-        lda #SLAVE_SEL
-        sta SPISEL
-        rts
-_unsel:
-        lda #$0
-        sta SPISEL
-        rts
+
+_read:
+.byte $00, $00, $00, $03
 
 _irq:
 _break:
