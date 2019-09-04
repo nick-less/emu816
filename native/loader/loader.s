@@ -35,6 +35,10 @@ l2:     lda SPIDATA
         dex 
         bpl l2
 
+;  ZP address after loading 5 bytes
+;    $7E $7F size of block
+;    $80 $81 start address of block
+;
 ; not need, y is zero after reset
 ;        ldy #$0
 
@@ -50,6 +54,7 @@ _copy:
         iny
         dex
         bne _copy
+
         ; slave unsel
         lda #$0
         sta SPISEL

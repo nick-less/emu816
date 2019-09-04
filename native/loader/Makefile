@@ -6,6 +6,7 @@ TARGET  = none
 CC      = cl65
 AS      = ca65
 LDFLAGS = -C ld.config -t $(TARGET) -m $(PROGRAM).map
+ASFLAGS = --listing loader.lst
 
 CFLAGS=-I.
 DEPS = 
@@ -17,6 +18,8 @@ OBJ = loader.o
 loader: $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 	xxd -i loader >loader.h
+	javac MakeSnippet.java
+	java MakeSnippet
 
 
 clean:
