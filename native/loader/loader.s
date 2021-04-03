@@ -1,5 +1,5 @@
-; the loader is a small program which will be present in the cpld
-; it will enable native mode, load the first blocks from spi flash at sel0 and jump there to start
+; the loader is a small 65816 program suitable for the cpld boot rom (est 64 bytes..)
+; it will enable native mode, load the first item from spi flash at sel2 and jump to the start address
 .setcpu         "65816"
 .smart          on
 .autoimport     on
@@ -9,28 +9,30 @@
 .define SPI     $FF80
 .define SPIDATA SPI
 .define SPISTAT SPI+1
+.define SPI65CTRL SPISTAT 
 .define SPIDIV  SPI+2
 .define SPISEL  SPI+3
 .define SLAVE_SEL $04
-
+.define SPI65_STAT_BSY $20
+.define SPI65_STAT_DONE $80
 .define CMD_READ $03
 
 .segment        "RODATA"
 
 
 _reset:
-        ; slave sel0
+        ; slave sel2
         lda #SLAVE_SEL
         sta SPISEL
 ; send cmd read
         ldx #3;
 l1:     lda _read,x
-        sta SPIDATA
+        jsr SENDBYTE
         dex
         bpl l1
 ;load first 5 bytes (size+start address)
         ldx #4
-l2:     lda SPIDATA
+l2:     jsr READBYTE
         sta $7E,x
         dex 
         bpl l2
@@ -39,7 +41,7 @@ l2:     lda SPIDATA
 ;    $7E $7F size of block
 ;    $80 $81 start address of block
 ;
-; not need, y is zero after reset
+; not needed, y is zero after reset
 ;        ldy #$0
 
         ; to native mode
@@ -49,7 +51,7 @@ l2:     lda SPIDATA
 
         ldx $7E 
 _copy:
-        lda SPIDATA
+        jsr READBYTE
         sta ($80),y
         iny
         dex
@@ -63,8 +65,31 @@ _copy:
         xce    ;exchange (swap) carry with the emulation bit.
         jmp ($80)
 
+READBYTE:
+	lda #SPI65_STAT_BSY
+l3:	bit SPI65CTRL
+	bne l3				; wait until not busy
+	lda #SPI65_STAT_DONE
+	sta SPIDATA	; trigger transfer
+l4:	bit SPI65CTRL
+	bpl l4				; wait till transfer done
+        tya
+	lda SPIDATA
+	rts
+	
+
+SENDBYTE:
+	tay
+	lda #SPI65_STAT_BSY
+l5:	bit SPI65CTRL
+	bne l5				; wait until not busy
+	sty SPIDATA	; trigger transfer
+	rts
+	
+
+
 _read:
-.byte $00, $00, $00, $03
+.byte $0, $0, $0, $3
 
 _irq:
 _break:

@@ -96,10 +96,11 @@ bool Vic::decodeAddress(const Address &in, Address &out) {
         if (timer1A == 0) {
             //Log::vrb("VIC").str("IRQ ").hex(timer1A).str (cpu->getCpuStatus()->interruptDisableFlag() ?" true ": " false").show();
 
-            cpu->setIRQPin(true);
+            // cpu->setIRQPin(true);
 //           timer1Aenable = false;
         }
     }
+
   // cpu->setIRQPin(true);
   if ((in.getOffset() >= 0xdc00) && (in.getOffset() < 0xdc10)) {
     out = in;
@@ -109,6 +110,7 @@ bool Vic::decodeAddress(const Address &in, Address &out) {
     out = in;
     return true;
   }
+
 
   if ((in.getBank() == startAdr.getBank()) &&
       (in.getOffset() > startAdr.getOffset()) &&

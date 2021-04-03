@@ -4,6 +4,7 @@
 #include "video.hpp"
 #include "vic.hpp"
 #include "spi.hpp"
+#include "spidebug.hpp"
 #include "../native/loader/loader.h"
 
 #include <fstream>
@@ -23,8 +24,8 @@ int load(Ram *ram, char *filename);
 
 #define LOG_TAG "MAIN"
 
-#define BASIC_START 0x0400
-#define BASIC_END 0xA000
+#define BASIC_START 0x0800
+#define BASIC_END 0x8000
 
 NativeModeInterrupts nativeInterrupts{
     .coProcessorEnable = 0x0000,
@@ -40,36 +41,43 @@ EmulationModeInterrupts emulationInterrupts{.coProcessorEnable = 0x0000,
                                             .unused = 0x0000,
                                             .abort = 0x0000,
                                             .nonMaskableInterrupt = 0xFFFA,
-                                            .reset = 0xff80,
+                                            .reset = 0xffa0,
                                             .brkIrq = 0xFFFE};
 
 int main(int argc, char **argv) {
   Log::vrb(LOG_TAG).str("+++ 65816 sbc emulator +++").show();
 
   
-  Vic vic = Vic (Address(0x00, 0xD000));
-  SPI spi = SPI (Address(0x00, 0xDE00));
+  Vic vic = Vic (Address(0x00, 0xFF40));
+  SPI spi = SPI (Address(0x00, 0xFF80));
 
 
   Ram ram = Ram(0x2);
   // Loader is in RAM just like the real hardware handles this
-  for (int i=0;i<128;i++) {
-          ram.storeByte(Address(0,0xff80+i), loader[i]);
+  for (int i=0;i<0x60;i++) {
+          ram.storeByte(Address(0,0xffa0+i), loader[i]);
   }
 
   Video video = Video(&ram);
   video.update();
 
+  SPIDebug debug = SPIDebug(&video);
+  spi.setDevice(1,&debug);
+
+
 
   SystemBus systemBus = SystemBus();
   systemBus.registerDevice(&video);
-  systemBus.registerDevice(&vic);
+//  systemBus.registerDevice(&vic);
   systemBus.registerDevice(&spi);
   systemBus.registerDevice(&ram);
 
+  spi.setDevice(3,video.getKeyboard());
+
+
   Cpu65816 cpu(systemBus, &emulationInterrupts, &nativeInterrupts);
   Cpu65816Debugger debugger(cpu);
-  debugger.setBreakPoint(Address(0x00, 0x0000));
+  debugger.setBreakPoint(Address(0x00, 0xff80));
   debugger.doBeforeStep([]() {});
   debugger.doAfterStep([]() {});
 
@@ -100,7 +108,7 @@ int main(int argc, char **argv) {
    for (int i = 0; i < 32; i++) {
     Log::vrb(LOG_TAG)
         .str("ram")
-        .hex(ram.readByte(Address(0x00, 0xa000 + i)))
+        .hex(ram.readByte(Address(0x00, 0x80 + i)))
         .show();
   }
 // SDL_Delay(20000);

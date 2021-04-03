@@ -32,13 +32,22 @@ then
 rm -f $IMAGE
 fi
 # first 256 bytes loader 
-cat loader/loader >$IMAGE
-cat loader/loader >>$IMAGE
+#cat loader/loader >$IMAGE
+#cat loader/loader >>$IMAGE
 # after
 
 
-dumpFile starter/starter 00 c0 00
-dumpFile basic20.bin 00 a0 00
-dumpFile kernal-64.bin 00 e0 00
-dumpFile charset.bin 00 d0 00
-dumpFile 'Galaga_(None).prg' 00 08 01
+dumpFile starter/starter 00 10 00
+#dumpFile ../../hardware/mini-65816/rom/osi_bas 00 c0 00
+
+dumpFile ../../6502-Monitor/monitor 00 E0 00
+
+#dumpFile basic4.b000 00 b0 00
+#dumpFile edit4b80e000.bin 00 e0 00
+#dumpFile kernal4.f000 00 f0 00
+
+
+#dumpFile basic20.bin 00 a0 00
+#dumpFile kernal-64.bin 00 e0 00
+#dumpFile charset.bin 00 d0 00
+#dumpFile 'Galaga_(None).prg' 00 08 01

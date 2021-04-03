@@ -4,24 +4,27 @@
 #include <SDL2/SDL.h>
 #include <lib65816/include/SystemBusDevice.hpp>
 #include "ram.hpp"
+#include "spi.hpp"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 400
 #define ERROR_SDL_INIT 100
 
-#define WIDTH 40
+#define WIDTH 80
 #define HEIGHT 25
 #define SCREEN_MEM_SIZE (WIDTH * HEIGHT)
 
-#define VIDEO_ADDR 0x0400
-#define COLOR_ADDR 0xD800
+#define VIDEO_ADDR 0x8000
+#define COLOR_ADDR 0x9000
+
+
 
 class Video : public SystemBusDevice {
 private:
     Address startAdr = Address(0x00, VIDEO_ADDR);
     Address colorAdr = Address(0x00, COLOR_ADDR);
-    unsigned char vbuffer[SCREEN_MEM_SIZE];
-    unsigned char cbuffer[SCREEN_MEM_SIZE];
+    unsigned char vbuffer[SCREEN_MEM_SIZE*2];
+    unsigned char cbuffer[SCREEN_MEM_SIZE*2];
     int charHeight = 8;
     int charWidth = 8;
     int renderHeight = 2;
@@ -30,13 +33,15 @@ private:
     bool isClosed = false;
 
     SDL_Window *window = NULL;
+    SPIDevice *keyboard = NULL;
+
     SDL_Renderer *renderer = NULL;
     SDL_Surface *screenSurface = NULL;
     SDL_Texture * texture = NULL;
     Uint32 * pixels = NULL;
     Ram *ram;
 
-    Uint32 colortable[16] = {
+    Uint32 colortable[256] = {
         0x00000000,
         0x00FFFFFF,
         0x0068372B,
@@ -62,6 +67,9 @@ public:
     ~Video();
 
     void poll(void);
+    SPIDevice *getKeyboard() {
+        return this->keyboard;
+    }
 
     bool closed(void) { return isClosed;};
 

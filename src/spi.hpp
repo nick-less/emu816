@@ -18,6 +18,8 @@ class SPIDevice {
     virtual void write(uint8_t value) = 0;
 };
 
+
+
 class SPI : public SystemBusDevice {
 private:
     Address startAdr;
@@ -36,6 +38,7 @@ public:
     SPI(Address adr);
     ~SPI();
     void setCpu(Cpu65816 *cpu);
+    void setDevice(int deviceId, SPIDevice *device);
 
     void storeByte(const Address &, uint8_t);
     uint8_t readByte(const Address &);
